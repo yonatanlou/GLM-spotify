@@ -1,12 +1,13 @@
 ---
-title: "Trending Tunes: GLM Investigation of Spotify Song Popularity"
+title: 'Trending Tunes: GLM Investigation of Spotify Song Popularity'
 author: "Yonatan Lourie"
 date: "`r Sys.Date()`"
 output:
   pdf_document:
-    keep_tex: true
-    toc: true
+    keep_tex: yes
+    toc: yes
     toc_depth: 2
+header-includes: \usepackage{lipsum}
 bibliography: biblio.bib
 ---
 
@@ -33,6 +34,7 @@ library(kableExtra)
 library(modelsummary)
 
 source("./utils__.R")
+
 FONT_SIZE = 5
 kable <- function(...) {
    knitr::kable(...) %>% kable_styling(font_size = FONT_SIZE) %>% kable_paper(full_width = F)%>% kable_styling(position = "float_right")
@@ -41,7 +43,6 @@ kable <- function(...) {
 
 ```{r read data}
 dir <- getwd()
-
 df <- read.csv(paste0(dir,"/spotify_tracks_15_16_filtered.csv"))
 ```
 
@@ -73,25 +74,30 @@ df_only_popular <- df[df$is_popular,]
 
 
 ```
+>
+Logistics:
+1. The R code is fully reproducible and attached as spotifyGLM.rmd (I've just include=FALSE) for the code lines. \
+2. Some of the EDA was done in python, files attached in the folder EDA_python.
+
 
 ## Introduction
 
 Spotify is one of the world's leading music streaming platforms, with a vast library of songs from various genres and artists. 
 To enhance the user experience and provide personalized recommendations, Spotify uses a combination of user behavior data and audio feature analysis.
-In this paper, I'm trying to model how a certain song become popular. I've chose the data-set [Spotify tracks dataset](https://www.kaggle.com/datasets/lehaknarnauli/spotify-datasets?ref=datascience.fm&select=tracks.csv), which consist hundred of thousands of songs which can be describe by mostly audio features.
+In this paper, I will model how a certain song become popular. I've chose the data-set [Spotify tracks dataset](https://www.kaggle.com/datasets/lehaknarnauli/spotify-datasets?ref=datascience.fm&select=tracks.csv), which consist hundred of thousands of songs which can be describe by mostly audio features. I will use generalized linear models framework for this task.
+
 
 ### Dataset
 The provided data-set contains ~250,000 songs that was composed between 1950-2020.
-For working with a smaller data-set, I've cleaned the data-set to include songs that answer the following rules:\ 
-1. Composed between the years 2015-2016.
-2. Only English songs.
-3. Remove songs with popularity equal to 0.
+For working with a smaller data-set, I've cleaned the data-set to include songs that answer the following rules: \ 
+1. Composed between the years 2015-2016. \
+2. Only English songs. \
+3. Remove songs with popularity equal to 0. \
 
 New data-set size: 15,206 songs.
 
 I've enriched the data-set with some more features with the Spotify API:
 Artist_popularity - how popular is the artist.
-Genre - Genre of this particular artist (i took a random genre because each artist have multiple genres).
 Artist_followers.
 
 
@@ -100,7 +106,7 @@ The problem I will try to solve is to predict the popularity of a song, based on
 We can model this problem as $P(Y|X)$ when $Y=Popularity$, $X=Features$.
 Except from predictability, we can use $P(Y|X)$ for understanding how the model features influence on our target variable.
 
-Our target variable is the popularity of each song. $Y$ is continuous variable (from 0 to 100). For modeling the logistic model, i will introduce another target variable ($is_{popular}$), which have a binary outcome.
+Our target variable is the popularity of each song. $Y$ is continuous variable (from 0 to 100). For modeling the logistic model, i will introduce another target variable ($is\_{popular}$), which have a binary outcome.
 The cutoff point will be at popularity=20.
 
 
@@ -122,7 +128,7 @@ knitr::include_graphics("spotifyGLM/plots/popularity_hist.png")
 
 ### EDA
 
-```{r all_feat_hist_show, echo=FALSE, out.width = '100%',fig.cap='ALl features histograms', include=TRUE, fig.align = 'center'}
+```{r all_feat_hist_show, echo=FALSE, out.width = '100%', include=TRUE, fig.align = 'center'}
 knitr::include_graphics("spotifyGLM/plots/hist_all_features.png")
 ```
 
@@ -130,7 +136,7 @@ knitr::include_graphics("spotifyGLM/plots/hist_all_features.png")
 - The energy feature seems to distributed exponentially.
 - We have pretty much the same amount of songs between 2015 and 2016.
 - Most of the songs does not contains explicit content.
-- We have some outlines in num_of_artists, duration_ms.
+- We have some outliers in num_of_artists, duration_ms.
 
 ```{r KDE, include=TRUE}
 
@@ -167,7 +173,7 @@ grid.arrange(grobs=plots_list,ncol = 2, top="KDE plots (popular vs not popular)"
 
 ```
 
-Here is a plot of the KDE of some interesting continues features. $KDE(X|Y=1)$, $KDE(X|Y=0)$ (Gaussian kernel), when $X$ is a certain feature and $Y=is\_popular$.
+This is a of the KDE of some interesting continues features. $KDE(X|Y=1)$, $KDE(X|Y=0)$ (Gaussian kernel), when $X$ is a certain feature and $Y=is\_popular$.
 we want to see features that act very different with popularity and without popularity. 
 We can see that songs with lower energy tend to be more popular.
 seems that ~130 tempo is very not popular. 
@@ -183,14 +189,20 @@ knitr::include_graphics("spotifyGLM/plots/mean_popularity_by_genre.png")
 
 
 
-```{r corr, include=FALSE, eval=FALSE}
+```{r corr, include=FALSE, eval=TRUE}
+png("spotifyGLM/plots/corr.png")
 numeric_df <- df[, sapply(df, is.numeric)]
 cor_matrix <- cor(numeric_df)
-corrplot(cor_matrix, type = "upper", order = "hclust", 
-         tl.col = "black", tl.srt = 45)
-ggsave("spotifyGLM/plots/corr.png")
+# corrplot(cor_matrix, type = "upper", order = "hclust", 
+#          tl.col = "black", tl.srt = 45)
+
+
+# Close device
+dev.off()
+# ggsave("spotifyGLM/plots/corr.png")
 ```
-```{r corr_show, echo=FALSE, fig.cap="", out.width = '55%'}
+
+```{r corr_show, echo=FALSE, eval=FALSE,fig.cap="", out.width = '55%'}
 knitr::include_graphics("spotifyGLM/plots/corr.png")
 
 ```
@@ -335,7 +347,7 @@ ylab('Popularity')
 ```
 
 
-#### EDA summary
+#### EDA summary \
 
 Categorical variables (except year) crucial for modeling. Explicit songs more popular but less common. Time signature 0 for meditation, 4 most prevalent. Potential interactions in time signature.
 
@@ -374,17 +386,17 @@ ll[,c("which.max","name","artists")]
 
 4. The most danceable song is [Hudiny](https://open.spotify.com/track/5gcKqaXjgmqX6EUeQA0H5d?si=d811c369d96f415d) by Miro Jaros.
 
-5. The song with the most energy is [Numb The Pain (Mix Cut) - Original Mix](https://open.spotify.com/track/4punrab9NtQ54sNIQNI2Ml?si=2bb4e73068714e81)
+5. The song with the most energy is [Numb The Pain (Mix Cut) - Original Mix](https://open.spotify.com/track/4punrab9NtQ54sNIQNI2Ml?si=2bb4e73068714e81).
 
 
 
 
 ## Methods
-This section will be organize as follows:
-1. General
-2. Different metrics ive used
-3. Different formulas ive used
-4. Different models ive used
+This section will be organize as follows: \
+1. General info. \
+2. Different metrics I've used. \ 
+3. Different formulas I've used. \
+4. Different GLM's I've used. \
 
 To model the popularity of a song we can model it as a regression problem (how popular is the song), and as classification problem (is the song popular or not). \
 I will focus in 3 main models: \
@@ -393,8 +405,10 @@ I will focus in 3 main models: \
 3. logistic model (different link functions). \
 
 For the regression models I'm dealing only with popular songs (songs with popularity>20), for easy reference of the target variable, the new Y is Popularity-20.
-### Metrics
+
+### Metrics \
 For comparing between models I've used a few main metrics: \
+
 1. **AIC** - The Akaike Information Criterion (AIC) is a statistical measure used for model selection and comparison. It balances the trade-off between the goodness of fit of a model and its complexity, aiming to find the most suitable model for a given data-set. AIC is defined as: $AIC = 2k - 2\ln(L)$ Where:
 $k$ represents the number of parameters in the model.
 $L$ is the maximum likelihood estimate of the likelihood function for the model.
@@ -414,7 +428,7 @@ Where:
 - $L_{\text{null}}$ is the likelihood of a null or intercept-only model.
 - $L_{\text{model}}$ is the likelihood of the fitted GLM.
 Deviance is a way to compare the fit of a model to the fit of a saturated model that perfectly fits the data. The lower the deviance value, the better the model fits the data. We can also compare models with different features inside and not the null.
-
+Note that in terms of GLM's, this form can be simplified as a function of the family and the link function (for example in poisson glm with log link function).
 
 4. **LRT test** - The Likelihood Ratio Test (LRT) is a statistical test used to compare the fit of two nested models. It assesses whether adding or removing certain parameters in a model significantly improves or worsens the model fit. The test statistic for LRT is based on the difference in log-likelihoods between the two models and follows a chi-squared distribution.
 Given two models, the larger (more complex) model is denoted as \( M_1 \) and the simpler, nested model as \( M_0 \). The LRT statistic is calculated as:
@@ -422,10 +436,7 @@ $$ \text{LRT} = -2 \times (\ln(L_{M_0}) - \ln(L_{M_1})) $$
 Where:
 - $L_{M_0}$ is the likelihood of the nested model $M_0$.
 - $L_{M_1}$ is the likelihood of the larger model $M_1$.
-
-The LRT statistic can be compared to the chi-squared distribution with degrees of freedom equal to the difference in the number of parameters between the two models. If the calculated LRT statistic is larger than the critical value from the chi-squared distribution, it indicates that the larger model significantly improves the fit compared to the nested model.
-
-
+The LRT statistic can be compared to the chi-squared distribution with degrees of freedom equal to the difference in the number of parameters between the two models. If the calculated LRT statistic is larger than the critical value from the chi-squared distribution, it indicates that the larger model significantly improves the fit compared to the nested model.   
 All of the models that i will fit are fully parametric. As a result, a likelihood ratio test (LR) is a simple way for distinguishing between models. When models are nested, the LR statistic has the standard $\chi^2$ distribution. The non formal strategy for non-nested models is to employ information criteria such as the Akaike information criterion (AIC).
 
 ### Formulas
@@ -453,7 +464,11 @@ $popularity \sim formula\_2 +acousticness+instrumentalness+mode:(loudness+instru
 
 ### Models
 #### Poisson
-the GLM likelihood equations for $n$ independent observations simplify for a Poisson response with linear predictor $\eta_{i}=g\left(\mu_{i}\right)=\sum_{j} \beta_{j} x_{i j}$ having link function $g$ to
+I chose the poisson model because we are dealing with count data, the popularity variable is a discrete variable, which seems suitable for this model. Another reason is simplicity. Pretty easy to use, without any special data pre-processing, and easy to interpret.
+
+The main problem with this model is over-dispersion. The Poisson distribution assumes that the mean and variance of the response variable are equal. If the variance is larger than the mean, it indicates over-dispersion. mean of the popularity is very not equal to the variance (mean=`r round(mean(df$popularity),2)`, var=`r round(var(df$popularity),2)`), which could indicate on over-dispersion (but this is not the right measurement for over-dispersion).
+
+The GLM likelihood equations for $n$ independent observations simplify for a Poisson response with linear predictor $\eta_{i}=g\left(\mu_{i}\right)=\sum_{j} \beta_{j} x_{i j}$ having link function $g$ to
 
 $$
 \sum_{i=1}^{n} \frac{\left(y_{i}-\mu_{i}\right) x_{i j}}{\operatorname{var}\left(y_{i}\right)}\left(\frac{\partial \mu_{i}}{\partial \eta_{i}}\right)=\sum_{i=1}^{n} \frac{\left(y_{i}-\mu_{i}\right) x_{i j}}{\mu_{i}}\left(\frac{\partial \mu_{i}}{\partial \eta_{i}}\right)=0 .
@@ -481,9 +496,9 @@ Taken from [@agresti2015foundations]
 For estimation of the dispersion parameter I've used the formula with the default pearson estimator:
 $$\phi_P = \frac{X^2}{n-k}=\frac{1}{n-k}\sum_{i=1}^n \frac{w_i (y_i - \hat{\mu}_i)^2}{ v(\hat{\mu}_i)}$$
 
-There are several ways to deal with over-dispersion in poisson Glm - using Quasipoisson distribution / gamma distribution / negative binomial distribution.
+There are several ways to deal with over-dispersion in poisson GLM - using Quasipoisson distribution / gamma distribution / negative binomial distribution.
 
-I chose to use the negative binomial model. Actually, asymptotically, the NB model will aim to the poisson model as the $r$ parameter goes to infinity. A short explaination from [Tim Barry](https://timothy-barry.github.io/posts/2020-06-16-gamma-poisson-nb/): \
+I chose to use the negative binomial model. Actually, asymptotically, the NB model will aim to the poisson model as the $r$ parameter goes to infinity. A short explanation from [Tim Barry](https://timothy-barry.github.io/posts/2020-06-16-gamma-poisson-nb/): \
 Consider the negative binomial (NB) distribution, represented as \(P(X = x) = \binom{x + r - 1}{x} \cdot \left(\frac{p}{p+r}\right)^x \cdot \left(\frac{r}{p+r}\right)^r\). Its mean is calculated as \(\frac{p/(p+r)r}{1 - p/(p+r)} = p\), and its variance is given by \(\frac{ p/(p+r) r }{ (1 - p/(p+r))^2 } = p + \frac{p^2}{r}.\) \
 Hence, when \(r<\infty\), the variance of the negative binomial distribution surpasses its mean. This distinctive feature sets the Poisson and NB distributions apart—while in the Poisson distribution, the mean and variance align. Demonstrably, as \(r\) approaches infinity, the NB distribution converges to the Poisson distribution. In simpler terms, as \(r\) becomes exceptionally large, \(\lim_{r \to \infty} \textrm{NB}\left( r, \frac{\lambda}{r + \lambda}\right) = \textrm{Pois}(\lambda).\) 
 Thus, for substantial \(r\), the NB and Poisson distributions can be treated as essentially identical. On the other hand, for small \(r\), the NB distribution assumes a form resembling an "over-dispersed" Poisson distribution.
@@ -541,22 +556,19 @@ In this section, i will handle this problem as a classification problem when $Y=
 The threshold for what popular is will be the same as the previous section ($is \ popular = popularity \geq 20$).
 
 
-todo explanation about logistic regression.
+The Logistic GLM is used for binary outcomes, like success/failure. It employs the logit link function to model the log-odds of success as a linear combination of predictors:
 
-<!-- Comparing to the regression models is problematic, because this is a different problem. I've compare the impact of the coefficients for each model. Because there are different link functions, I thought about comparing the ranking and significance of the coefficients. -->
+\[
+\log\left(\frac{p}{1-p}\right) = \beta_0 + \beta_1 x_1 + \ldots + \beta_p x_p
+\]
 
-<!-- Let $\beta_{M_1} = (\beta_{1,1}, \beta_{1,2}, \ldots, \beta_{1,p})$ and $\beta_{M_2} = (\beta_{2,1}, \beta_{2,2}, \ldots, \beta_{2,p})$ be the coefficient vectors for models $M_1$ and $M_2$ respectively, where $n$ is the number of coefficients. -->
+Here, \(p\) is the probability of success, and \(\beta_0, \ldots, \beta_p\) are coefficients. To interpret coefficients, exponentiate them:
 
-<!-- To compare the similarity of the coefficient ranking between the two models, one approach is to calculate a ranking correlation coefficient, such as the Spearman's rank correlation coefficient ($\rho$), given by: -->
+- \(e^{\beta_j}\) is the multiplicative effect on odds for a 1-unit increase in \(x_j\).
+- \(\frac{e^{\beta_j}}{e^{-\beta_j}}\) is the factor change in odds per 1-unit increase.
 
-<!-- \[ -->
-<!-- \rho = 1 - \frac{6 \sum d_i^2}{n(n^2 - 1)} -->
-<!-- \] -->
-<!-- where $d_i$ is the difference in ranks of $\beta_{1,i}$ and $\beta_{2,i}$. -->
-
-
-
-The link function in logistic regression is a mathematical function that transforms the linear predictor (a linear combination of the independent variables) to a probability. The most common link functions used in logistic regression are the logit, probit, and loglog link functions.
+Coefficients greater than 1 increase odds; less than 1 decrease them. For example, if \(e^{\beta_1} = 2.5\), odds increase by 2.5 times for each unit increase in \(x_1\).
+The most common link functions used in logistic regression are the logit, probit, and loglog link functions.
 
 *Logit link function*: The logit link function is the most common link function used in logistic regression. It is defined as the natural logarithm of the odds of success. The odds of success is the probability of success divided by the probability of failure. The formula for the logit link function is:
 
@@ -564,39 +576,35 @@ $logit(\mu) = \ln \left( \frac{\mu}{1 - \mu} \right)$
 where $\mu$ is the mean of the probability distribution.
 
 
-
 *Probit link function*: The probit link function is another common link function used in logistic regression. It is defined as the inverse of the cumulative distribution function (CDF) of the standard normal distribution. The CDF of the standard normal distribution is a function that takes a real number as input and returns the probability that a standard normal random variable will be less than or equal to that number. The formula for the probit link function is:
 $probit(\mu) = \Phi^{-1}(\mu)$
 where $\Phi$ is the CDF of the standard normal distribution.
 
-Loglog link function: The loglog link function is a less common link function used in logistic regression. It is defined as the logarithm of the odds of success multiplied by 2. The formula for the loglog link function is:
+*Loglog link function*: The loglog link function is a less common link function used in logistic regression. It is defined as the logarithm of the odds of success multiplied by 2. The formula for the loglog link function is:
 $loglog(\mu) = 2 \ln \left( \frac{\mu}{1 - \mu} \right)$
 
 
 I will compare different log functions for the logistic regression: 
-I've compared different logit, probit, loglog by ROC, BIC, AIC and deviance.
+I will compare different logit, probit, loglog by ROC, BIC, AIC and deviance.
 The Receiver Operating Characteristic (ROC) curve is a graphical representation used to assess the performance of classification models, particularly in binary classification tasks. It illustrates the trade-off between the True Positive Rate (Sensitivity) and the False Positive Rate (1 - Specificity) across different threshold values for predicting the positive class.
-
 The ROC curve is constructed by plotting the True Positive Rate (TPR) against the False Positive Rate (FPR) as the threshold for classifying positive instances is varied.
 
 
 
-### GMM TODO
-I will fit a Generalized Linear Mixed Model (GLMM), where the target variable is whether a track is popular (`is\_popular`). I'm using the binomial family to model the binary outcome. The model includes a random effect to account for clustering by the artist variable. The GLMM can be represented as:
+#### GLMM
+I will fit a Generalized Linear Mixed Model (GLMM), where the target variable is whether a track is popular ($is\_popular$). I'm using the binomial family to model the binary outcome. The model includes a random effect to account for clustering by the artist variable. The GLMM can be represented as:
 
-\[
-\text{logit}(P(\text{is\_popular})) = \beta_0 + \beta_1 \times \text{duration\_min} + \beta_2 \times \text{num\_of\_artists} + \ldots + \beta_k \times \text{energy:mode1} + \alpha_{\text{artist}}
-\]
+$$
+\text{logit}(P(\text{is popular})) = \beta_0 + \beta_1 \times \text{duration min} + \beta_2 \times \text{num of artists} + \ldots + \beta_k \times \text{energy:mode1} + \alpha_{\text{artist}}
+$$
 
 where:
-\begin{align*}
-P(\text{is\_popular}) & \text{ is the probability of a track being popular}, \\
-\beta_0 \text{ to } \beta_k & \text{ are the fixed effect coefficients for the predictor variables}, \\
-\alpha_{\text{artist}} & \text{ represents the random effect for each artist}, \\
-\text{Other predictor variables} & \text{ are as described in your model output.}
-\end{align*}
 
-*I will filter the data so only artists that have more than 2 songs in those years will be counted due too many artists clusters.
+- $\beta_0$ to $\beta_k$ are the fixed effect coefficients for the predictor variables.
+- $\alpha_{artist}$ represents the random effect for each artist.
+
+
+> **I will filter the data so only artists that have more than 2 songs in those years will be counted due too many artists clusters.
 
 
 ## Results
@@ -655,10 +663,6 @@ formula_3_reduced = paste("popularity ",step$final)
 poisson_model_reduced <- glm(data=df_only_popular, formula=formula_3_reduced, family = poisson(link="log"))
 
 ```
-I chose the poisson model because we are dealing with count data, the popularity variable is a discrete variable, which seems suitable for this model. Another reason is simplicity. Pretty easy to use, without any special data pre-processing, and easy to interpret.
-
-The main problem with this model is over-dispersion. The Poisson distribution assumes that the mean and variance of the response variable are equal. If the variance is larger than the mean, it indicates over-dispersion. mean of the popularity is very not equal to the variance (mean=`r round(mean(df$popularity),2)`, var=`r round(var(df$popularity),2)`), which could indicate on over-dispersion (but this is not the right measurement for overdispersion).
-
 
 
 The LRT test: $2(L(M_2)-L(M_3))$ = 2 X (`r round(logLik(poisson_models[[2]])[1])` - `r round(logLik(poisson_models[[3]])[1])`) = `r round(lrtest(poisson_models[[2]],poisson_models[[3]])[4][[1]][2])` with 1 df.
@@ -701,51 +705,37 @@ $$
 \end{aligned}
 $$
 
-Model metrics: AIC:`r round(poisson_model_reduced$aic,2)` BIC: `r round(BIC(poisson_model_reduced),2)` Deviance: `r round(poisson_model_reduced$deviance,2)`
+Models metrics: 
+```{r, include=TRUE}
+comparison_df_poisson_models <- calculate_comparison_df(poisson_models, "poisson_model")
+comparison_df_nb_models <- calculate_comparison_df(nb_models, "nb_model")
+comparison_df_lm_models <- calculate_comparison_df(lm_models, "lm_model")
+models_pois_compare = comparison_df_poisson_models[,c("model_names","df_res","deviance","scaled_deviance","aic","bic")]
+kable(models_pois_compare)
+```
+
 Let's take a look on the coefficients of the model:
 
 ```{r, include=TRUE, results='asis'}
 library(stargazer)
-
 stargazer(poisson_model_reduced, coeftest(poisson_model_reduced, vcov = sandwich::vcovHC), type="latex",header=FALSE, single.row = TRUE, 
-
           no.space = TRUE, # to remove the spaces after each line of coefficients
-
           column.sep.width = "3pt", # to reduce column width
-
-          font.size = "tiny", column.labels = c("Poisson", "Poisson robust std") )
+          font.size = "tiny", column.labels = c("Poisson", "Poisson robust std"), float = FALSE )
 ```
 
- 
-
-```{r, include=FALSE}
-library(tidyverse)
-library(broom)
-poisson_model_reduced %>%   tidy() %>%
-  mutate(
-    p.value = scales::pvalue(p.value)
-  ) %>% knitr::kable(
-    col.names = c("Predictor", "B", "SE", "t", "p"),
-    digits = c(0, 3, 3, 2, 3),
-    align = c("l", "r", "r", "r", "r")) %>% kable_styling(font_size = FONT_SIZE) %>%  kable_paper(full_width = F)
-```
-
-The errors of this model seems heteroskedastic, so ive run the model with robust standard errors.
+The errors of this model seems heteroskedastic, so I've run the model with robust standard errors.
 The most 'strong' co-variates are mode, artist_popularity and explicit. 
 Coefficients with very low significant rate: key, time_signature (+interactions), acousticness.
 Coefficients with very high significant rate are: explicit:instrumentalness,mode:loudness,valence:explicit,energy:speechiness,explicit:liveness,loudness\
 instrumentalness,mode,energy:explicit.
 The most significant coef is artist_followers, which not very surprising due to the fact that this is a component in the origin formula of Spotify for how they composing the popularity feature.
-We can see that there are some important features that becomes unsignificat with the sandwich method (Pval< 0.001) like mode and explicit.
+We can see that there are some important features that becomes unsignificant with the sandwich method (Pval< 0.001) like mode and explicit.
 
 Let's take and example for a new song that have 0 for all of the variables except from explicit=1, loudness=9
 That means the predicted popularity should be: $\hat{Y}=exp(\beta_0+\beta_{7}(\operatorname{explicit}_{\operatorname{1}}) +\beta_{24}(\operatorname{loudness}))=exp(1.958+0.105+9*0.67)+20 = 34.38$
 I've added the 20 because i subtract it to 0 before the analysis.
  
-
-
-
-
 
 ```{r}
 
@@ -755,15 +745,14 @@ dispersion_param = calculate_dispersion(poisson_model)
 
 ```
 
-
 An important thing, is the over-dispersion of this model.
-As we suspected, the poisson model have over-dispersion ($\phi$=`r round(dispersion_param,2)`, Pval<0.001).
+As we suspected, the poisson model have big over-dispersion ($\phi$=`r round(dispersion_param,2)`, Pval<0.001).
 As i describe in the [methods](#methods) section, I chose to handle this by applying a Negative - binomial model.
 
 ### Negative-binomial
-I've chose the same model as the poisson. I've already stated that the comparison between those its a bit problematic.
-The DHARMa package transform the residuals of any GL(M)M into a standardized space. Once this is done, we can visually assess / test residual problems such as deviations from the distribution, residual dependency on a predictor, heteroskedasticity or autocorrelation in the normal way.
-Fundamental results for ordinary linear models about projections and orthogonality of fitted values and residuals do not hold exactly for GLMs, so using this package can very helpful in terms of GLMS.
+I've chose the same model as the poisson. I've already stated that the comparison between those its a bit problematic (with some metrics).
+The DHARMa package is an easy to use package that can be use for model analysis for glm's. The package can transform the residuals of any GL(M)M into a standardized space. Once this is done, we can visually assess / test residual problems such as deviations from the distribution, residual dependency on a predictor, heteroskedasticity or autocorrelation in the normal way.
+Fundamental results for ordinary linear models about projections and orthogonality of fitted values and residuals do not hold exactly for GLM's, so using this package can very helpful in terms of GLMS.
 let's look in the qqplot that was generated by the DHARMa package:
 
 ```{r}
@@ -822,7 +811,7 @@ ggsave("spotifyGLM/plots/poisson_vs_nb_vcov.jpeg")
 ```
 Let's compare the coefficients and their CI's of the poisson and the negative-binomial:
 
-Poisson vs NB coefficientes         |  Poisson vs NB coefficientes(sandwich estimators)
+Poisson vs NB coefficients         |  Poisson vs NB coefficients(sandwich estimators)
 :-------------------------:|:-------------------------:
 ![](spotifyGLM/plots/poisson_vs_nb.jpeg){width=60%}  |  ![](spotifyGLM/plots/poisson_vs_nb_vcov.jpeg){width=60%}
 
@@ -839,7 +828,7 @@ stargazer( nb_model_reduced, lm_model, type="text",header=FALSE, single.row = TR
           font.size = "tiny", column.labels = c("Poisson", "NB", "LM") )
 ```
 
-First, seems that the estimates for both of the models are pretty much the same (with slight difference in some of the coefficients). Interestingly, when we are not using robust standart errors, the CI of the poisson coefficients are much smaller than the NB model. But when we are using robust standart error, the CI becomes much bigger.
+First, seems that the estimates for both of the models are pretty much the same (with slight difference in some of the coefficients). Interestingly, when we are not using robust standard errors, the CI of the poisson coefficients are much smaller than the NB model. But when we are using robust standard error, the CI becomes much bigger.
 
 
 
@@ -872,7 +861,7 @@ knitr::include_graphics("spotifyGLM/plots/residuals_nb_poiss.jpeg")
 ```
 The first thing you can see is that the residuals for the Poisson model are larger than the residuals for the NB model. This means that the NB model is more flexible and can fit the data better than the Poisson model.
 
-You can also see that the residuals for the Poisson model are more spread out than the residuals for the Poisson model. This is because the Poisson model allows for overdispersion, which means that the variance of the data is greater than the mean. The NB model does not allow for overdispersion, so the residuals for the NB model are more tightly clustered around zero.
+You can also see that the residuals for the Poisson model are more spread out than the residuals for the Poisson model. This is because the Poisson model allows for over-dispersion, which means that the variance of the data is greater than the mean. The NB model does not allow for over-dispersion, so the residuals for the NB model are more tightly clustered around zero.
 
 Finally, you can see that there are some outliers in the residuals for both models. Seems like both models have problem with prediction of low-popularity songs, and are much better for prediction of high-popular songs.
 
@@ -920,7 +909,17 @@ knitr::kable(res) %>% kable_styling(font_size = 4) %>% kable_paper(full_width=FA
 ```
 Most of outliers are over-estimate (predicted higher). most of them are remastered, which means are quite old songs that in those year uploaded to Spotify (pink Floyd, David Bowie). A good future features is to get the real release date of the songs.
 
-
+```{r}
+lm_model_reduced = glm(data=df_only_popular, formula = formula_3_reduced)
+final_metrics_models = calculate_comparison_df(list(nb_model_reduced, poisson_model_reduced, lm_model_reduced), "dfd")
+final_metrics_models$model_names = c("nb","poisson","lm")
+final_metrics_models = final_metrics_models[,c("model_names","df_res","deviance","scaled_deviance","aic","bic")]
+kable(final_metrics_models)
+```
+Lastly, i wanted to compare our models to the regular linear model (GLM with Gaussian family and identity link). 
+Turns out that the linear model works out the best in almost all metrics. This could raise up a question, do we even need to use different generalized families for this problems?
+I think that this comparison with 'raw' statistics such as deviance and AIC could be problematic in some cases. If our problem can be best solved with a certain link function and distribution family, we maybe need to leave our model comparison 'inside the family'.
+Let's move on modeling this problem as a classification problem:
 
 
 ### Logistic model
@@ -1091,33 +1090,6 @@ knitr::include_graphics("spotifyGLM/plots/roc_plot.jpeg")
 
 ```
 
-```{r, include=FALSE}
-library(ggplot2)
-library(gridExtra)
-resid_logit_resp <- residuals(logistic_model_reduced, type = "response")
-resid_logit_dev <- residuals(logistic_model_reduced, type = "deviance")
-resid_logit_pear <- residuals(logistic_model_reduced, type = "pearson")
-
-
-# Create three ggplot objects
-g1 <- ggplot(df, aes(x = rownames(df), y = resid_logit_pear)) +
-  geom_point( alpha = 0.1) +
-  labs(title = "pearson")+  theme(axis.text.x = element_blank(), axis.title.x = element_blank())
-
-
-g2 <- ggplot(df, aes(x = rownames(df), y = resid_logit_dev)) +
-  geom_point( alpha = 0.1) +
-  labs(title = "deviance")+  theme(axis.text.x = element_blank(), axis.title.x = element_blank())
-
-g3 <- ggplot(df, aes(x = rownames(df), y = resid_logit_resp)) +
-  geom_point( alpha = 0.1) +
-  labs(title = "response")+  theme(axis.text.x = element_blank(), axis.title.x = element_blank())
-
-# Arrange the plots using grid.arrange
-grid.arrange(g1, g2, g3, ncol = 3, top = "Residuals")
-
-```
-
 
 ```{r}
 nb_logistic_formula = glm.nb(data=df, formula=formula_3_reduced_logistic)
@@ -1128,8 +1100,9 @@ nb_logistic_formula = glm.nb(data=df, formula=formula_3_reduced_logistic)
 
 
 
-### GMM 
+### GLMM 
 
+For fitting a logistic Generlized-linear-mixed-model, ive filtered the dataset for artists that have more than three songs in those years for making our resutls more stabilise. 
 
 ```{r}
 df_filtered <- df %>%
@@ -1138,135 +1111,119 @@ df_filtered <- df %>%
 
 ```
 
+```{r}
+formula_logistic= "is_popular  ~ duration_min + num_of_artists + artist_popularity + valence + danceability + energy + explicit + key + mode + time_signature + loudness + acousticness + instrumentalness + mode:loudness + mode:instrumentalness + energy:explicit + explicit:speechiness + explicit:liveness + explicit:acousticness + valence:explicit + energy:mode  - time_signature"
+logistic_model <- glm(data=df_filtered, formula=formula_logistic, family = binomial)
+```
 
 
 ```{r, eval=FALSE}
 library(lme4)
-logistic_model <- glm(data=df_filtered, formula=formula_3_reduced_logistic, family = binomial)
+
 formula_logistic_glmm <- "is_popular  ~ (1|artists) +duration_min + num_of_artists + artist_popularity + valence + danceability + energy + explicit + key + mode + time_signature + loudness + acousticness + instrumentalness + mode:loudness + mode:instrumentalness + energy:explicit + explicit:speechiness + explicit:liveness + explicit:acousticness + valence:explicit + energy:mode  - time_signature"
 glmm_logistic <- glmer(formula = formula_logistic_glmm, family = binomial, data = df_filtered)
 save(glmm_logistic, file = "spotifyGLM/plots/glmm.RData")
 
 ```
+
 ```{r}
 load("spotifyGLM/plots/glmm.RData")
+anova(glmm_logistic, logistic_model)
 ```
 
 
-```{r, include=TRUE}
-stargazer(glmm_logistic, logistic_model,type = "text",header=FALSE, single.row = TRUE, 
+
+
+```{r, include=TRUE,results='asis'}
+stargazer(glmm_logistic, logistic_model,type = "latex",header=FALSE, single.row = TRUE, 
 
           no.space = TRUE, # to remove the spaces after each line of coefficients
 
           column.sep.width = "3pt", # to reduce column width
 
-          font.size = "tiny")
+          font.size = "tiny",float = FALSE)
 ```
 
-First of all, the LRT test shows that the glmm model have significant better fit ($\chi^2_{stat} = 2841.3$)
-The coeffecients estimates and signficance has changed drmaticly with comparison to the new glmm model.
-There are some coefficients with opposites estimates (GLM positive estimate, GLMM negative estimate), when looking into those coeffecients, it seems like there are problaby alot of noise, because the significance is not high, and the estimate is pretty small.
-Another interesting metric that i thougt of is to compare the ranking of the absulute value of the coeffecients.
-The intercept of the models is different, yielding different interaction between the coeffecietns, ive tried to reduce this complexity by plotting the ranking of the coeffeceintes of the model.
+
+The LRT test shows that the glmm model have significant better fit ($\chi^2_{stat} = 2841.3$)
+The coefficients estimates and significance has changed dramatically with comparison to the new glmm model.
+There are some coefficients with opposites estimates (GLM positive estimate, GLMM negative estimate), when looking into those coefficients, it seems like there are probably a lot of noise, because the significance is not high, and the estimate is pretty small.
+
+Overall, the GLMM model is a more complex model than the logistic model, and it is able to account for more factors that may affect a song's popularity. However, the logistic model is simpler and easier to interpret, and it may be more appropriate for some datasets.
+Based on the results of the two models, I would say that the best model is the GLMM model. This is because the GLMM model is able to account for more factors that may affect a song's popularity, and it is more likely to provide accurate results. 
+
+Another interesting metric that i thought of is to compare the ranking of the absolute value of the coefficients.
+The intercept of the models is different, yielding different interaction between the coefficients, I've tried to reduce this complexity by plotting the ranking of the coefficients of the model.
+
+```{r, eval=FALSE}
+# Load necessary libraries
+library(ggplot2)
+library(dplyr)
+library(gridExtra)
+library(ggpubr)
+# png("spotifyGLM/plots/ranking_glmm.png")
 
 
+# Create squared plots
+g1 <- compare_coefficient_rankings(logistic_model, glmm_logistic, significance_by = "a", title = "Significance by GLM")
+g2 <- compare_coefficient_rankings(logistic_model, glmm_logistic, significance_by = "b", title = "Significance by GLMM")
 
-
-```{r, include=TRUE}
-
-library(tidyverse)
-
-# Function to compare coefficient rankings between two models
-compare_coefficient_rankings <- function(model1, model2, significance_by, title) {
-  # Extract and tidy the coefficient information
-  coef_1 <- data.frame(summary(model1)$coefficient)
-  coef_2 <- data.frame(summary(model2)$coefficient)
-  
-  
-  # Rank coefficients based on the absolute value of estimates for each model
-  coef_1 <- arrange(coef_1, desc(abs(Estimate))) %>%
-    mutate(rank_1 = 1:nrow(coef_1))
-  
-  coef_2 <- arrange(coef_2, desc(abs(Estimate))) %>%
-    mutate(rank_2 = 1:nrow(coef_2))
-  # Merge the ranked coefficients from both models based on the coefficient names
-  matched_coefs <- merge(coef_1,coef_2, by = 0, all = TRUE)  # 'by = 0' means merge by the row names
-  colnames(matched_coefs)[1] <- "term"
-
-  
-   # Create a dataframe for comparison
-  comparison_df <- data.frame(
-    coefficient = matched_coefs$term,
-    rank_1 = matched_coefs$rank_1,
-    rank_2 = matched_coefs$rank_2
-  )
-  if (significance_by == "a") {
-    comparison_df$significance = ifelse(matched_coefs$Pr...z...x < 0.01, "Significant", "Not Significant")
-  }
-  else {
-    comparison_df$significance = ifelse(matched_coefs$Pr...z...y < 0.01, "Significant", "Not Significant")
-  }
-  correlation <- cor(comparison_df$rank_1, comparison_df$rank_2, method = "spearman")
-  
-  # Create a ggplot graph for visualization
-  comparison_plot <- ggplot(comparison_df, aes(x = rank_1, y = rank_2, color = significance, label = coefficient)) +
-    geom_point() +
-    geom_abline(intercept = 0, slope = 1, color = "red", linetype = "dashed") +
-    geom_text(nudge_x = 0.5, nudge_y = -0.5, size = 2) +  # Add coefficient labels with nudge adjustments
-    labs(x = "Logistic Rank", y = "GLMM logistic Rank", title = title )+
-    scale_color_manual(values = c("Significant" = "green", "Not Significant" = "gray")) +
-    theme_minimal()
-  
-  # Show the graph
-  return(comparison_plot)
-}
-g1 = compare_coefficient_rankings(logistic_model, glmm_logistic, significance_by= "a", title="Signifcance by GLM")
-g2 = compare_coefficient_rankings(logistic_model, glmm_logistic, significance_by= "b", title="Signifcance by GLMM")
-grid.arrange(g1,g2,top="dfs")
+# Arrange the squared plots
+# grid.arrange(g1, g2, ncol = 2, top = "Coefficients rank (absolute) between GLM and GLMM",
+#              widths = c(4, 4)) 
+print(ggarrange(g1, g2, ncol = 2,nrow=1, top = "Coefficients rank (absolute) between GLM and GLMM",
+             common.legend=TRUE) )
+# dev.off()
+# ggsave("spotifyGLM/plots/ranking_glmm.png", plot=p)
 ```
+
+```{r ranking, echo=FALSE, out.width = '80%', include=TRUE}
+knitr::include_graphics("spotifyGLM/plots/ranking_glmm.png")
+```
+
+We can see that there are some 'un-agree-able' coefficients between the models. This mean that between different artists, the coefficients are affecting the relationship to popularity differently.
+Particular, we can see that the explicit interactions are high ranked in the GLM setting in comparison to the GLMM setting. The loudness and the mode seems more important in the GLMM setting. The other mismatches are less significant.
 
 Overall, the inclusion of artist clusters in the GLMM seems to lead to changes in the magnitude and sometimes the direction of the coefficients, indicating that accounting for the random effects associated with artists can have a substantial impact on the interpretation of the relationships between predictor variables and popularity.
 
+
 ## Summary
-In this analysis of the Spotify dataset, the goal was to model the relationship between various features and the popularity of songs using different Generalized Linear Models (GLMs). The chosen response variable, popularity, is a count data and discrete, making the Poisson model an initial suitable choice due to its simplicity and compatibility with count data. However, issues of over-dispersion arose, suggesting that the Poisson model might not be the best fit.
+In this analysis of the Spotify data-set, the goal was to model the relationship between various features and the popularity of songs using different Generalized Linear Models (GLM's). The chosen response variable, popularity, was analysed as a count data and discrete. 
+For count data (regression problem) The Poisson model was an initial suitable choice due to its simplicity and compatibility with count data. However, issues of over-dispersion arose, suggesting that the Poisson model might not be the best fit.
 
-The Likelihood Ratio Test (LRT) indicated that a more complex model was superior, yet its complexity led to the exploration of a leaner model. Through backward elimination, the tempo feature was removed. The LRT between the reduced model and the initial complex model suggested that removing the tempo feature was reasonable. In terms of complexity, the selected model is still pretty big, and for further analysis, i can try to reduce the size of the model with more 'strong' backward elimination (controlling with higher p-value), or with trying to remove high correlated features.
+The Likelihood Ratio Test (LRT) indicated that a more complex model was superior, yet its complexity led to the exploration of a leaner model. Through backward elimination, the tempo feature was removed. 
+This process of fitting the three basic models, and then backward elimination some features was done for all the different GLM's that I've fitted.
+In terms of complexity, the final selected model is still pretty big, and for further research, i can try to reduce the size of the model with more 'strong' backward elimination (controlling with higher p-value), or with trying to remove high correlated features.
 
-The final model was defined, and its metrics were evaluated: AIC, BIC, and deviance were provided for model comparison. The model's coefficients were analyzed, revealing the significance and strength of various covariates. 
-Mode: Songs in major mode are more likely to be popular. This is probably because they are perceived as being happier and more upbeat.
-Artist popularity: Songs by more popular artists are more likely to be popular. This is probably because more people are familiar with the artist and are more likely to listen to their songs.
-Explicit: Explicit songs are more likely to be popular. This is probably because they are more exciting and attention-grabbing.
+The final model was defined as
+> popularity  ~ duration_min + num_of_artists + artist_popularity + valence + danceability + energy + explicit + key + mode + time_signature + loudness + acousticness + instrumentalness + mode:loudness + mode:instrumentalness + energy:explicit + explicit:speechiness + explicit:liveness + explicit:acousticness + valence:explicit + energy:mode + energy:speechiness + mode:time_signature
 
-Our results also suggest that some factors, such as key and time signature, which not have a significant impact on song popularity. This is interesting, as these factors are often thought to be important in music theory, i suspect that there is not enough data for the variablity of this factors.
+and its metrics were evaluated: AIC, BIC, and deviance were provided for model comparison. The model's coefficients were analyzed, revealing the significance and strength of various covariates. 
+*Mode*: Songs in major mode are more likely to be popular. This is probably because they are perceived as being happier and more upbeat.
+*Artist popularity*: Songs by more popular artists are more likely to be popular. This is probably because more people are familiar with the artist and are more likely to listen to their songs.
+*Explicit*: Explicit songs are more likely to be popular. This is probably because they are more exciting and attention-grabbing.
 
+Our results also suggest that some factors, such as key and time signature, which not have a significant impact on song popularity. This is interesting, as these factors are often thought to be important in music theory, i suspect that there is not enough data for the variability of this factors.
 
 Accounting for over-dispersion, a Negative-Binomial model was considered. Although similar to the Poisson model, the Negative-Binomial model appeared to provide better fit as demonstrated by residual analysis and the ability to handle over-dispersion. Coefficient estimates between the two models were largely consistent, with the Negative-Binomial model exhibiting wider confidence intervals, particularly when robust standard errors were applied (sandwich estimators).
+Only in the end of my analsis, I've remembered that i didnt try the regular linear model. Surprisingly, the linear model had much better metrics that the poisson and the negative binomial models. 
 
-The Logistic model was also explored with the same formulas, the backward elimination procedure assisted in constructing a smaller and more interpretable model. The logit link function was deemed optimal in terms of AIC and BIC.
-Except from the strong and significant coefficients from the NB model, in this model there were a few more interesting coefficients that arose like:
-energy:explicit -  Negative estimate which probably means that songs with low energy and no explicit tend to be less popular.
-num_of_Artist - Negative estimate, probably there are alot of unpopular songs with alot of artists in the same song.
-However, comparison between regression and classification models are pretty problematic (in addition to that, this is not extacly the same data).
-
-In regular linear regression, the assumptions are pretty strict with (P=Gaussian) and identity link. With GLM, we can match the problem we are trying to solve to our GLM, while while adjusting the underlying assumptions (distribution, link function) to our specific probelm. 
-
-
-In conclusion, this analysis demonstrated the importance of model selection and validation in GLMs. The Poisson model, despite its initial suitability for count data, faced challenges of over-dispersion, leading to the consideration of more complex models and the Negative-Binomial model to account for over-dispersion. The ultimate choice of model, whether Poisson, Negative-Binomial, or Logistic, was determined by considerations of goodness-of-fit, feature significance, and model stability.
+The Logistic model was also explored with the same formulas, the backward elimination procedure assisted in constructing a smaller and more interpret-able model. The logit link function was deemed optimal in terms of AIC and BIC.
+Although dealing with different problem from count data, i wanted to see the difference between the coeffecients in the negative-binomial model and the logistic model. Note that those model are dealing with different data (in the logistic case we have songs with popularity < 20). I'm assuming that the difference in the coefficients will be caused by the fact that the logistic model will be focused on separability of bad and good songs.
+In the logistic model there were a few more interesting coefficients that arose like:
+energy:explicit - Negative estimate which probably means that songs with low energy and no explicit tend to be less popular.
+num_of_Artist - Negative estimate, probably there are a lot of unpopular songs with a lot of artists in the same song.
 
 
-Further Research and Ideas: \
+A logistic GLMM demonstrated significant improvement over the logistic model (LRT $\chi^2_{stat} = 2841.3$). While coefficient estimates and significance varied, the GLMM's complexity allowed it to account for more factors affecting song popularity, making it the preferred choice. Notably, comparing coefficient rankings revealed discrepancies, highlighting the impact of artist-specific effects on interpreting predictor-popularity relationships.
+
+**Further Research and Ideas**: \
 
 1. Offset - Poisson regression is typically used to model count data. But, sometimes, it is more relevant to model rates instead of counts. This is relevant when, e.g., individuals are not followed the same amount of time. We can use offset here with using the datetime (month). we can account for this temporal variability and potentially yield more accurate results.
 
 2. Confounding and collapsible - Exploring the impact of confounding variables and collapsibility in the context of the GLM analysis could offer valuable insights. Investigating how certain variables might confound the relationships between features and song popularity could help refine the model and enhance its explanatory power. Additionally, examining the collapsibility of associations between variables might shed light on the underlying causal mechanisms.
 
-3. GLMM - Extending the analysis to include Generalized Linear Mixed Models (GLMMs) could be a promising avenue. GLMMs allow for the incorporation of both fixed and random effects, accommodating complex hierarchical structures in the data. In the context of song popularity, this could account for potential clustering of songs within artists, genres, or other categorical variables.
-
-4. comparison with lm model - Performing a comprehensive comparison between the GLM models and a traditional linear regression (lm) model could provide interesting insights. While the GLM models are tailored to handle specific data distributions and link functions, a linear regression model could offer a benchmark for understanding how well the GLMs capture the underlying relationships. This comparison might highlight instances where the specialized nature of GLMs leads to better fit and interpretability.
-
-5. Try different data - see if the conclusions here can be generlized to different time period.
-
-
+3. Try different data - see if the conclusions here can be generalized to different time period.
 
 
 
@@ -1293,6 +1250,16 @@ Further Research and Ideas: \
 **track_genre**: The genre in which the track belongs. \
 
 
-2. code (organized) (include the jupyter notebook as well)
+### Code
+Note that most of the EDA and preprocessing code was done in python, I've added a python code in a seperate file.
+This paper is fully reproducible, you can open it in rmarkdown and run it (the code is hidden in the pdf, but it exist in the notebook).
+todo add code.
 
-## Refernces
+```
+saldkngfsadlfnasdlfnasdf
+aslgknsdl'gndsknds
+sagnaslgnlgnas
+fdsfds
+```
+
+## References
